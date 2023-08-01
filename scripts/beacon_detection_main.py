@@ -34,7 +34,7 @@ listOfBeacons   = []
 
 def callback(msg):
     try:
-        rospy.loginfo("message received")
+        rospy.loginfo("message received.")
         image_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough') # Conversion of msg to cv2 image
         newBeacons = detect.objDetection(image_data)                           # Run objection detetion on image
         
