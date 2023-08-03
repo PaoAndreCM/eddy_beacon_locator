@@ -1,4 +1,4 @@
-import beacon
+from beacon import Beacon
 
 listOfBeacons = []
 

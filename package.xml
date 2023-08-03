@@ -58,6 +58,8 @@
   <build_depend>position_calculation</build_depend>
   <build_depend>cv2</build_depend>
   <build_depend>json</build_depend>
+  <build_depend>numpy</build_depend>
+  <build_depend>os</build_depend>
 
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
@@ -68,6 +70,9 @@
   <build_export_depend>beacon</build_export_depend>
   <build_export_depend>cv2</build_export_depend>
   <build_export_depend>json</build_export_depend>
+  <build_depend>numpy</build_depend>
+  <build_depend>os</build_depend>
+
 
   <exec_depend>rospy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
@@ -79,6 +84,8 @@
   <exec_depend>cv2</exec_depend>
   <exec_depend>json</exec_depend>
   <exec_depend>beacon</exec_depend>
+  <build_depend>numpy</build_depend>
+  <build_depend>os</build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
