@@ -86,7 +86,30 @@ def Rectified_Image_callback(data):
 
     img_90 = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    frame_copy = detect(img_90,cfg,weights,classes)
+    # *****************Split images*****************************
+    # Get the dimensions of the combined image
+    height, width = img_90.shape[:2]
+
+    # Calculate the width of each individual picture
+    picture_width = width // 6
+    w_to_cut = 245
+
+    # Crop the image into 6 separate regions
+    pictures = [img_90[:, i * picture_width+w_to_cut: (i + 1) * picture_width-w_to_cut] for i in range(6)]
+    pictures[3] = img_90[:, 3 * picture_width + w_to_cut + 20: (3 + 1) * picture_width - w_to_cut + 20]
+
+    # Rearrange the cropped regions in the correct order
+    # rearranged_pictures = [pictures[5], pictures[4], pictures[3], pictures[2], pictures[1]]
+    #for i in range(5):
+    #    frame_copy = detect(i,cfg,weights,classes)
+
+    rearranged_pictures = [pictures[5], pictures[4], pictures[3], pictures[2], pictures[1]]
+    for picture in rearranged_pictures:
+        frame_copy = detect(picture, cfg, weights, classes)
+    # **********************************************************
+
+
+    #frame_copy = detect(img_90,cfg,weights,classes) #original
 
     # frame zurück zu ROS-Image konvertieren
     frame_copy = bridge.cv2_to_imgmsg(frame_copy, encoding="bgr8")
@@ -98,8 +121,12 @@ def Rectified_Image_callback(data):
 if __name__ == '__main__':
     ## Load path to model config ##
     dirname = os.path.dirname(__file__)
-    cfg = os.path.join('/media/psf/CJ1/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
-    weights = os.path.join('/media/psf/CJ1/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
+
+    #************ADD YOUR PATH HERE**********************
+    cfg = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
+    weights = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
+    #*****************************************************
+
     classes = ['bake', 'bake2']
     #Node initialisieren
     rospy.init_node("Bakenerkenner")

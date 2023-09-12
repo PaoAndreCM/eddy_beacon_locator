@@ -70,8 +70,8 @@
   <build_export_depend>beacon</build_export_depend>
   <build_export_depend>cv2</build_export_depend>
   <build_export_depend>json</build_export_depend>
-  <build_depend>numpy</build_depend>
-  <build_depend>os</build_depend>
+  <build_export_depend>numpy</build_export_depend>
+  <build_export_depend>os</build_export_depend>
 
 
   <exec_depend>rospy</exec_depend>
@@ -80,12 +80,11 @@
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>detect_beacon</exec_depend>
   <exec_depend>position_calculation</exec_depend>
-  <build_export_depend>beacon</build_export_depend>
   <exec_depend>cv2</exec_depend>
   <exec_depend>json</exec_depend>
   <exec_depend>beacon</exec_depend>
-  <build_depend>numpy</build_depend>
-  <build_depend>os</build_depend>
+  <exec_depend>numpy</exec_depend>
+  <exec_depend>os</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
