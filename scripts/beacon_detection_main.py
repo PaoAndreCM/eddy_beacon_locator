@@ -17,6 +17,7 @@ Then json objects are created and published to a new topic (not tested)
 
 # Imports
 import rospy
+import os
 import cv2
 import json
 from sensor_msgs.msg import Image
@@ -25,49 +26,79 @@ from cv_bridge import CvBridge
 import detect_beacon as detect
 import beacon
 import position_calculation as pos
+from sbg_driver.msg import SbgGpsPos as gps
 
 
 rospy.init_node('beacon_detection', anonymous=True)  # Initialization of ROS node
 bridge          = CvBridge()                         # CVBridge for converting msg data to opencv images
-list_of_beacons   = []
-gnss_data        = [None, None]
+list_of_beacons = []
+detected_beacons = []
 
 
 def callback_cam(msg):
+    global gps_data
+    global list_of_beacons
     try:
-        rospy.loginfo("message received.")
+        #rospy.loginfo("IMG received.")
+        detected_beacons.clear()
         image_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough') # Conversion of msg to cv2 image
-        new_beacons = detect.objDetection(image_data)                           # Run objection detetion on image
+        img_90 = cv2.rotate(image_data, cv2.ROTATE_90_CLOCKWISE)
+
+        # Crop the image into 6 separate regions
+        try:
+            # *****************Split images*****************************
+            # Get the dimensions of the combined image
+            height, width = img_90.shape[:2]
+
+            # Calculate the width of each individual picture
+            picture_width = width // 6
+            w_to_cut = 245
+            pictures = [img_90[:, i * picture_width+w_to_cut: (i + 1) * picture_width-w_to_cut] for i in range(6)]
+            pictures[3] = img_90[:, 3 * picture_width + w_to_cut + 20: (3 + 1) * picture_width - w_to_cut + 20]
+            rearranged_pictures = [pictures[5], pictures[4], pictures[3], pictures[2], pictures[1]]
+        except Exception as e:
+            print("Error in image splitting process", e)
+
+        # run beacon detection on each of the individual pics
+        counter = 0
+        for img in rearranged_pictures:
+            try: 
+                detected_beacons.extend(detect.objDetection(img, cfg, weights, classes, counter))
+            except Exception as e:
+                print("Error in detection module:", e)
+            counter += 1 
         
-        for detected_beacon in new_beacons:                                      # Get GNSS of car and append beacon to list
-            detected_beacon.setCarGNSS(gnss_data[0], gnss_data[1])
-            list_of_beacons.append(detected_beacon)
+        # add car gps info of car to beacon and append to list
+        for beacon in detected_beacons:
+            beacon.setCarGPS(gps_data)
+            list_of_beacons.append(beacon) 
 
+        # for debugging
+        if detected_beacons == []: 
+            print("no beacon found")
+ 
     except Exception as error:
-        print("Error in beacon detection process:", error)
+        print("Error in detection function of main module:", error)
     
-    # Debugging: Create a jpg file to check correct reading of rosbag
+    # Debugging: Create a png file to check correct reading of rosbag
     #im_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-    #cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", im_data) 
+    cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", rearranged_pictures[0]) 
 
-def callback_gnss_lat(msg):
-    try:
-        gnss_data[0] = float(msg.data)    
+def callback_gps(msg): 
+    #rospy.loginfo("car GPS received.")
+    global gps_data 
+    try: 
+        gps_data = (msg.latitude, msg.longitude)
     except Exception as error:
-        print("Error saving gnss latidute: ", error)
-
-def callback_gnss_long(msg):
-    try:
-        gnss_data[1] = float(msg.data)
-    except Exception as error:
-        print("Error saving gnss longitude: ", error)
-
+        print("Error getting gps: ", error)
+ 
 def main():
+  
     rospy.Subscriber("/camera/image_raw", Image, callback_cam)    # Subscribe to ladybug cam
-    rospy.Subscriber("/gnss_latitude", String, callback_gnss_lat)     # Subscribe to gnss lat
-    rospy.Subscriber("/gnss_longitude", String, callback_gnss_long)   # Subscribe to gnss long
+    rospy.Subscriber("/sbg/gps_pos", gps , callback_gps)
     rospy.spin()                                                    # wait till all msg from topic have been played
 
+'''
     for current_beacon in list_of_beacons:
         try:
             pos.calculatePosition(current_beacon)
@@ -91,7 +122,17 @@ def main():
                 publisher.publish(jsonObj)
                 rate.sleep()
         except Exception as error:
-            print("Error in position calculation:", error)
+            print("Error in position calculation:", error)'''
+
 
 if __name__ == '__main__':
+
+    classes = ['bake', 'bake2', 'intelliBake']
+    gps_data        = []
+
+    #************ADD YOUR PATH HERE**********************
+    cfg = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
+    weights = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
+    #*****************************************************
+
     main()
