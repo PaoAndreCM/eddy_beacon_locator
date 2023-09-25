@@ -5,6 +5,7 @@ class Beacon:
         self.car_gps         = []
         self.image_part_nr   = img_part_nr
         self.beacon_gps      = []
+        self.beacon_angle    = 0.0
 
     def setCarGPS(self, gps):
         self.car_gps = gps
@@ -32,4 +33,9 @@ class Beacon:
     
     def getBeaconData(self):
         return [self.type, self.beaconLatitude, self.beaconLongitude]
+
+    def beacon_angle(self):
+        return self._beacon_angle
+    def beacon_angle(self, angle):
+        self._beacon_angle = angle
         
