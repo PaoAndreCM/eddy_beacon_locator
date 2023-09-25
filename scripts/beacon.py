@@ -34,8 +34,9 @@ class Beacon:
     def getBeaconData(self):
         return [self.type, self.beaconLatitude, self.beaconLongitude]
 
-    def beacon_angle(self):
+    def getBeaconAngle(self):
         return self._beacon_angle
-    def beacon_angle(self, angle):
+        
+    def SetBeaconAngle(self, angle):
         self._beacon_angle = angle
         
