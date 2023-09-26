@@ -1,3 +1,4 @@
+from angle_calculation import calculate_angle
 from beacon import Beacon
 import cv2
 import numpy as np
@@ -50,7 +51,9 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
                 boxes.append([x, y, w, h])
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
-                listOfBeacons.append(Beacon("Dummy", [x,y], image_part_number)) # insert beacon type/class later
+                # Calculate the angle of the beacon
+                angle = calculate_angle(image_part_number, center_x, width)
+                listOfBeacons.append(Beacon("Dummy", [x,y], angle, image_part_number)) # insert beacon type/class later
 
     #Detected plates put inside the image
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
