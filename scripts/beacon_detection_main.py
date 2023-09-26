@@ -44,7 +44,7 @@ def callback_cam(msg):
         image_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough') # Conversion of msg to cv2 image
         img_90 = cv2.rotate(image_data, cv2.ROTATE_90_CLOCKWISE)
 
-        # Crop the image into 6 separate regions
+
         try:
             # *****************Split images*****************************
             # Get the dimensions of the combined image
@@ -52,7 +52,8 @@ def callback_cam(msg):
 
             # Calculate the width of each individual picture
             picture_width = width // 6
-            w_to_cut = 245
+            w_to_cut = 260
+            # Crop the image into 6 separate regions
             pictures = [img_90[:, i * picture_width+w_to_cut: (i + 1) * picture_width-w_to_cut] for i in range(6)]
             pictures[3] = img_90[:, 3 * picture_width + w_to_cut + 20: (3 + 1) * picture_width - w_to_cut + 20]
             rearranged_pictures = [pictures[5], pictures[4], pictures[3], pictures[2], pictures[1]]
@@ -60,15 +61,15 @@ def callback_cam(msg):
             print("Error in image splitting process", e)
 
         # run beacon detection on each of the individual pics
-        counter = 0
+        image_number = 1
         for img in rearranged_pictures:
             try: 
-                detected_beacons.extend(detect.objDetection(img, cfg, weights, classes, counter))
+                detected_beacons.extend(detect.objDetection(img, cfg, weights, classes, image_number))
             except Exception as e:
                 print("Error in detection module:", e)
-            counter += 1 
+            image_number += 1
         
-        # add car gps info of car to beacon and append to list
+        # add car gps info of car to beacon and append to list 
         for beacon in detected_beacons:
             beacon.setCarGPS(gps_data)
             list_of_beacons.append(beacon) 
@@ -77,18 +78,18 @@ def callback_cam(msg):
         if detected_beacons == []: 
             print("no beacon found")
  
-    except Exception as error:
+    except Exception as error: 
         print("Error in detection function of main module:", error)
     
     # Debugging: Create a png file to check correct reading of rosbag
     #im_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-    cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", rearranged_pictures[0]) 
+    cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", img_90)#rearranged_pictures[4]) 
 
 def callback_gps(msg): 
     #rospy.loginfo("car GPS received.")
     global gps_data 
     try: 
-        gps_data = (msg.latitude, msg.longitude)
+        gps_data = (msg.latitude, msg.longitude) 
     except Exception as error:
         print("Error getting gps: ", error)
  
