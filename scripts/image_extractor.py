@@ -41,9 +41,9 @@ def process_rosbag_folder(folder_path, topic, output_folder):
 
 if __name__ == '__main__':
     # Replace these variables with your desired values
-    folder_path = "/media/psf/CJ1/rosbags"  # Folder containing the rosbag files
+    folder_path = "/home/sudi/RosBags"  # Folder containing the rosbag files
     topic = "/camera/image_raw"  # The topic containing the images
-    output_folder = "/media/psf/CJ1/extracted_images"  # Folder to save the extracted .jpg images
+    output_folder = "/home/sudi/extracted_images"  # Folder to save the extracted .jpg images
 
     process_rosbag_folder(folder_path, topic, output_folder)
 

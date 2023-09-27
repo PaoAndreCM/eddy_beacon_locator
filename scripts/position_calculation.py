@@ -23,8 +23,8 @@ def calculateLocation(carLatitude, carLongitude, d, bearing, R=6371):
     return (degrees(beaconLat), degrees(beaconLon))
 
 def calculatePosition(currentBeacon:Beacon):
-    angle = 0 #TODO
-    distanceFromCar = distance.calculateDistance(currentBeacon)
+    angle = Beacon.getBeaconAngle
+    distanceFromCar = distance.calculate_distance(currentBeacon)
 
     lat = currentBeacon.carLatitude
     lon = currentBeacon.carLongitude
