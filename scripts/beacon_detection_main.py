@@ -135,5 +135,8 @@ if __name__ == '__main__':
     cfg = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
     weights = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
     #*****************************************************
+    
+    #cfg = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
+    #weights = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
 
     main()
