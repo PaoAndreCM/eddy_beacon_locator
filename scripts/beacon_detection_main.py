@@ -63,7 +63,7 @@ def callback_cam(msg):
         # run beacon detection on each of the individual pics
         image_number = 1
         for img in rearranged_pictures:
-            try: 
+            try:  
                 detected_beacons.extend(detect.objDetection(img, cfg, weights, classes, image_number))
             except Exception as e:
                 print("Error in detection module:", e)
