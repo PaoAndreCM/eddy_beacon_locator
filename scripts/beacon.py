@@ -1,11 +1,12 @@
 class Beacon:
-    def __init__(self, type, boundingBoxPos, angle, img_part_nr):
+    def __init__(self, type, boundingBoxPos, angle, distance, img_part_nr):
         self.type            = type
         self.boundindBoxPos  = boundingBoxPos
         self.car_gps         = []
         self.image_part_nr   = img_part_nr
         self.beacon_gps      = []
         self.beacon_angle = angle
+        self.beacon_distance = distance
 
     def setCarGPS(self, gps):
         self.car_gps = gps
@@ -36,6 +37,9 @@ class Beacon:
 
     def getBeaconAngle(self):
         return self._beacon_angle
+    
+    def getBeaconDistance(self):
+        return self.beacon_distance
         
     def SetBeaconAngle(self, angle):
         self._beacon_angle = angle
