@@ -55,8 +55,8 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
                 # Calculate the angle of the beacon
                 angle = calculate_angle(image_part_number, center_x, width)
                 #Calculate the distance from car to beacon
-                distance = calculate_distance(y, height)
-                print("Distance from car:")
+                distance = calculate_distance(y, h, height)
+                print("****************************************Distance from car:**********************************")
                 print(distance)
                 print()
                 listOfBeacons.append(Beacon("Dummy", [x,y], angle, distance, image_part_number)) # insert beacon type/class later
