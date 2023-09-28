@@ -7,19 +7,23 @@ class Beacon:
         self.beacon_gps      = []
         self.beacon_angle = angle
         self.beacon_distance = distance
-
+ 
     def setCarGPS(self, gps):
         self.car_gps = gps
 
         # debugging - remove later
         print("image part in which beacon was found:")
         print(self.image_part_nr)
-        print("Type of found beacon:")
-        print(self.type)
-        print("gps of car when beacon was found: ")
-        print(self.car_gps)
-        print("bounding box pixel position of found beacon:")
-        print(self.boundindBoxPos)
+        #print("Type of found beacon:")
+        #print(self.type)
+        #print("gps of car when beacon was found: ")
+        #print(self.car_gps)
+        #print("bounding box pixel position of found beacon:")
+        #print(self.boundindBoxPos)
+        print("angle of beacon:")
+        print(self.beacon_angle)
+        print("distance to beacon:")
+        print(self.beacon_distance)
         print()
         print()
 

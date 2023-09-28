@@ -17,7 +17,7 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
 
     # image dimensions 
     height, width, channels = frame.shape
-
+ 
     # Create the pipeline
     blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
 
@@ -56,9 +56,6 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
                 angle = calculate_angle(image_part_number, center_x, width)
                 #Calculate the distance from car to beacon
                 distance = calculate_distance(y, h, height)
-                print("****************************************Distance from car:**********************************")
-                print(distance)
-                print()
                 listOfBeacons.append(Beacon("Dummy", [x,y], angle, distance, image_part_number)) # insert beacon type/class later
 
                 
