@@ -7,8 +7,8 @@
 #############################################################################
 
 def calculate_angle(picture_num, middle_x, width):
-    print(middle_x)
-    print(picture_num)
+    #print(middle_x)
+    #print(picture_num)
     width_of_full_image = width * 5
     num_of_pixels_left_to_center_of_camera = 510 / 1558 * width
     num_of_pixels_right_to_center_of_camera = width - num_of_pixels_left_to_center_of_camera

@@ -4,63 +4,70 @@ Construction site beacon detection and localization project
 ***********************************************************
 
 *** Main module ***
-This module controls the whole process. It subscribes to the topic of the ladybug camera.
+This module controls the whole process. It subscribes to the topic of the ladybug camera and car gps.
 When messages from that topic are received, they are converted to cv2 image data. A submodul for
 for detection of possible beacons on that image is called. It returns a list of class beacons (detected ones).
-Since rosbags are played synchronously, the current GNSS sensor data should belong to the car position
-while taking the picture (-> verify with Prof if thats really the case). The car GNSS data is stored inside the
-beacon class. As soon as the complete rosbag has been played, we iterate through the list of detected beacons
-and calculate the absolute position of the beacon in a submodule (module is still missing (distance and angle calc),
-the function returns dummy values at the moment). The absolute position is stored inside the beacon class.
-Then json objects are created and published to a new topic (not tested)
+GPS data is received with a frequency that is 5 times the frequency with what images are received (5Hz vs 1Hz). 
+Therefore every detected beacon is associated with the last received car GPS data.
+The image is split into 6 peaces, the one showing the sky is dumped and then the angle (relative to car orientation)
+and distance of the beacon are determined. From this relative position and the car GPS the aboslute postion (GPS)
+of the beacon is calculated and stored in the object. The data is then published.
 """
 
 # Imports
 import rospy
 import os
-import cv2
-import json
+import cv2 
+import math
+#import std_msgs.msg 
 from sensor_msgs.msg import Image
-from std_msgs.msg import String
 from cv_bridge import CvBridge
 import detect_beacon as detect
-import beacon
+from beacon import Beacon
 import position_calculation as pos
 from sbg_driver.msg import SbgGpsPos as gps
+from sbg_driver.msg import SbgEkfEuler as ekf_euler
+from eddy_beacon_locator.msg import beacon as beacon_msg
 
 
 rospy.init_node('beacon_detection', anonymous=True)  # Initialization of ROS node
-bridge          = CvBridge()                         # CVBridge for converting msg data to opencv images
-list_of_beacons = []
+bridge           = CvBridge()                         # CVBridge for converting msg data to opencv images
+list_of_beacons  = []
 detected_beacons = []
 
 
 def callback_cam(msg):
     global gps_data
+    global ekf_y_angle
     global list_of_beacons
     try:
-        #rospy.loginfo("IMG received.")
         detected_beacons.clear()
         image_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough') # Conversion of msg to cv2 image
         img_90 = cv2.rotate(image_data, cv2.ROTATE_90_CLOCKWISE)
-
-
+        
+        #********************
+        #
+        # This part of the function rotates splits the received ladybug image into 6 peaces and stores all of them
+        # except the one showing only the sky.
+        #
+        #********************
         try:
-            # *****************Split images*****************************
-            # Get the dimensions of the combined image
-            height, width = img_90.shape[:2]
+            height, width = img_90.shape[:2]                   
+            picture_width = width // 6                          
+            w_to_cut = 260                                     
 
-            # Calculate the width of each individual picture
-            picture_width = width // 6
-            w_to_cut = 260
-            # Crop the image into 6 separate regions
             pictures = [img_90[:, i * picture_width+w_to_cut: (i + 1) * picture_width-w_to_cut] for i in range(6)]
             pictures[3] = img_90[:, 3 * picture_width + w_to_cut + 20: (3 + 1) * picture_width - w_to_cut + 20]
             rearranged_pictures = [pictures[5], pictures[4], pictures[3], pictures[2], pictures[1]]
         except Exception as e:
             print("Error in image splitting process", e)
 
-        # run beacon detection on each of the individual pics
+        #********************
+        #
+        # This part runs the beacon detection on the separate parts of the image. The image parts are numbered in order
+        # to derive the correct angle from the front of the car
+        #
+        #********************
         image_number = 1
         for img in rearranged_pictures:
             try:  
@@ -69,74 +76,119 @@ def callback_cam(msg):
                 print("Error in detection module:", e)
             image_number += 1
         
-        # add car gps info of car to beacon and append to list 
+        #********************
+        #
+        # The current GPS data of the car is stored for detected beacons.
+        # The absolute position (GPS) of the beacon is calculated from its relative position (angle + distance to car)
+        #
+        #********************
         for beacon in detected_beacons:
-            beacon.setCarGPS(gps_data)
+            beacon.setCarGPS(gps_data)                   
+            print(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle())) 
             list_of_beacons.append(beacon) 
-
-        # for debugging
-        if detected_beacons == []: 
-            print("no beacon found")
- 
+  
     except Exception as error: 
         print("Error in detection function of main module:", error)
     
     # Debugging: Create a png file to check correct reading of rosbag
     #im_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-    cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", img_90)#rearranged_pictures[4]) 
+    #cv2.imwrite(str(msg.header.stamp.to_sec()) + ".png", rearranged_pictures[0]) 
 
+
+#********************
+#
+# Callback function for received car GPS data. New data overwrites old one
+#
+#********************
 def callback_gps(msg): 
-    #rospy.loginfo("car GPS received.")
     global gps_data 
     try: 
         gps_data = (msg.latitude, msg.longitude) 
     except Exception as error:
         print("Error getting gps: ", error)
+
+#********************
+#
+# Callback function for received car rotation w.r.t. to z axis. New data overwrites old 
+#
+#********************
+def callback_ekf(msg): 
+    global ekf_y_angle 
+    try:  
+        ekf_y_angle = msg.angle.z
+    except Exception as error: 
+        print("Error getting heading of car: ", error)
+
+# Only for testing
+def createDummyBeacons():
+    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
+    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
+    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
+    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
+    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
+    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
+    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
+    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
+    
+    for beacon in list_of_beacons:
+        beacon.setBeaconGps([10.172614992219154, 99.77867763126982])
+        beacon.SetConfidence(0.86)
  
+#********************
+#
+# Main function. Subscription to three rostopics (ladybug_cam, car_gps, car_z_rotation). Detection and position calculation 
+# beacons in callback_cam function. Data is pulished inside custom build message type "beacon_msg".
+# Todo: Replace rospy.bin() in order not to get stuck here. This line (149) has to be commented out currently in order to publish everything successfully.
+#
+#********************
 def main():
   
-    rospy.Subscriber("/camera/image_raw", Image, callback_cam)    # Subscribe to ladybug cam
-    rospy.Subscriber("/sbg/gps_pos", gps , callback_gps)
-    rospy.spin()                                                    # wait till all msg from topic have been played
+    rospy.Subscriber("/camera/image_raw", Image, callback_cam)                           # Subscribe to ladybug cam, object detection and pos calculation in callback
+    rospy.Subscriber("/sbg/gps_pos", gps , callback_gps)                                 # Subscribe to car gps
+    rospy.Subscriber("/sbg/ekf_euler", ekf_euler , callback_ekf)                         # Subscribe to ekf_euler to receive heading of car
+    rospy.spin()                                                                        # wait till all msg from topic have been played, remove later so won't be stuck here
+  
+    #createDummyBeacons()                                                                 # Create dummy beacons for debugging and testing
+    
+    publisher = rospy.Publisher("trafficBeacon/beacon_pos", beacon_msg, queue_size=10)   # create publisher publishing to trafficBeacon/beacon_pos topic
+    while not rospy.is_shutdown():
+        transmitted_beacons = [] 
 
-'''
-    for current_beacon in list_of_beacons:
-        try:
-            pos.calculatePosition(current_beacon)
-            type, lat, long = current_beacon.getBeaconData()
-            objData = {
-                "type":      str(type),
-                "latitude":  str(gnss_data[0]),#str(lat),
-                "longitude": str(gnss_data[1])#str(long)
-            }
+        for current_beacon in list_of_beacons:                                               # Iterate through list of beacons, and publish
+            try:
+                
+                rate = rospy.Rate(10)                                                        # Publshing frequency of 10Hz. Might need to be changed
 
-            jsonObj = json.dumps(objData)
-            publisher = rospy.Publisher('beaconLocation', String, queue_size=10)
-            rate = rospy.Rate(1)
+                type_id, latitude, longitude, confidence = current_beacon.getBeaconData()
 
-            # Debugging: Create json files to check content of objects
-            type, _, _ = current_beacon.getBeaconData()
-            with open(str(type) + ".json", "w") as json_file:
-                json.dump(jsonObj, json_file)
+                if not rospy.is_shutdown():                                                  # Check if ros is running. If so, publish
+                    beacon_message =  beacon_msg()
+                    beacon_message.beacon_type = type_id
+                    beacon_message.latitude = latitude
+                    beacon_message.longitude = longitude
+                    beacon_message.confidence = confidence
 
-            while not rospy.is_shutdown():
-                publisher.publish(jsonObj)
-                rate.sleep()
-        except Exception as error:
-            print("Error in position calculation:", error)'''
+                    publisher.publish(beacon_message)
+                    transmitted_beacons.append(current_beacon)
+                    rate.sleep()
+            except Exception as error:
+                print("Error while publishing: ", error)
 
+        for current in transmitted_beacons:
+            list_of_beacons.remove(current)
 
 if __name__ == '__main__':
 
-    classes = ['bake', 'bake2', 'intelliBake']
-    gps_data        = []
+    classes     = ['bake', 'bake2', 'intelliBake']
+    gps_data    = []
+    ekf_y_angle = None
 
-    #************ADD YOUR PATH HERE**********************
+
     cfg = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
     weights = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
-    #*****************************************************
+
     
-    #cfg = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
-    #weights = os.path.join('/home/sudi/catkin_ws_beacons/src/darknet_ros_pck/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
 
     main()
+
+ 
