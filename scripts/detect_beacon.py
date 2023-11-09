@@ -56,7 +56,7 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
                 angle = calculate_angle(image_part_number, center_x, width)
                 #Calculate the distance from car to beacon
                 distance = calculate_distance(y, h, height)
-                listOfBeacons.append(Beacon("Dummy", [x,y], angle, distance)) # insert beacon type/class later
+                listOfBeacons.append(Beacon(class_id, [x,y], angle, distance, confidence)) # insert beacon type/class later
                 
     #Detected plates put inside the image
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)

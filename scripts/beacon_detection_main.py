@@ -83,8 +83,10 @@ def callback_cam(msg):
         #
         #********************
         for beacon in detected_beacons:
-            beacon.setCarGPS(gps_data)                   
-            print(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle())) 
+            beacon.setCarGPS(gps_data)                
+            #print(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle())) 
+            beacon.setBeaconGps(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle()))
+            print(beacon.getBeaconData()) 
             list_of_beacons.append(beacon) 
   
     except Exception as error: 
@@ -120,19 +122,7 @@ def callback_ekf(msg):
         print("Error getting heading of car: ", error)
 
 # Only for testing
-def createDummyBeacons():
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    
-    for beacon in list_of_beacons:
-        beacon.setBeaconGps([10.172614992219154, 99.77867763126982])
-        beacon.SetConfidence(0.86)
+ 
  
 #********************
 #
@@ -146,9 +136,8 @@ def main():
     rospy.Subscriber("/camera/image_raw", Image, callback_cam)                           # Subscribe to ladybug cam, object detection and pos calculation in callback
     rospy.Subscriber("/sbg/gps_pos", gps , callback_gps)                                 # Subscribe to car gps
     rospy.Subscriber("/sbg/ekf_euler", ekf_euler , callback_ekf)                         # Subscribe to ekf_euler to receive heading of car
+    rate = rospy.Rate(10)  								    # Publshing frequency of 10Hz. Might need to be changed
     rospy.spin()                                                                        # wait till all msg from topic have been played, remove later so won't be stuck here
-  
-    #createDummyBeacons()                                                                 # Create dummy beacons for debugging and testing
     
     publisher = rospy.Publisher("trafficBeacon/beacon_pos", beacon_msg, queue_size=10)   # create publisher publishing to trafficBeacon/beacon_pos topic
     while not rospy.is_shutdown():
@@ -157,7 +146,7 @@ def main():
         for current_beacon in list_of_beacons:                                               # Iterate through list of beacons, and publish
             try:
                 
-                rate = rospy.Rate(10)                                                        # Publshing frequency of 10Hz. Might need to be changed
+                                                                      
 
                 type_id, latitude, longitude, confidence = current_beacon.getBeaconData()
 
@@ -179,7 +168,7 @@ def main():
 
 if __name__ == '__main__':
 
-    classes     = ['bake', 'bake2', 'intelliBake']
+    classes     = ['bake', 'bake2', 'intellibeacon']
     gps_data    = []
     ekf_y_angle = None
 

@@ -33,13 +33,3 @@ def calculateLocation(carLatitude, carLongitude, d, beacon_angle, z_rot, R=6371)
     )
     return (degrees(beaconLat), degrees(beaconLon))
 
-"""
-def calculatePosition(currentBeacon:Beacon):
-    angle = Beacon.getBeaconAngle
-    distanceFromCar = distance.calculate_distance(currentBeacon)
-
-    lat = currentBeacon.carLatitude
-    lon = currentBeacon.carLongitude
-    
-    beaconLatitud, beaconLongitud = calculateLocation(lat, lon, distanceFromCar, angle)
-    currentBeacon.setGNSS(beaconLatitud, beaconLongitud)"""
