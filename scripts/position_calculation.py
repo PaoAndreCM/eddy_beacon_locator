@@ -1,8 +1,7 @@
 from math import asin, atan2, cos, degrees, radians, sin, degrees
-from beacon import Beacon
 import distance_calculation as distance
 
-COMPASS_PHASE_SHIFT= 135
+COMPASS_PHASE_SHIFT= 0
 
 def car_orientation_angle_calculation(angle_radians):
     angle_degrees = degrees(angle_radians) % 360
@@ -33,13 +32,3 @@ def calculateLocation(carLatitude, carLongitude, d, beacon_angle, z_rot, R=6371)
     )
     return (degrees(beaconLat), degrees(beaconLon))
 
-"""
-def calculatePosition(currentBeacon:Beacon):
-    angle = Beacon.getBeaconAngle
-    distanceFromCar = distance.calculate_distance(currentBeacon)
-
-    lat = currentBeacon.carLatitude
-    lon = currentBeacon.carLongitude
-    
-    beaconLatitud, beaconLongitud = calculateLocation(lat, lon, distanceFromCar, angle)
-    currentBeacon.setGNSS(beaconLatitud, beaconLongitud)"""

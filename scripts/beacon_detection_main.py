@@ -22,8 +22,8 @@ import math
 #import std_msgs.msg 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-import detect_beacon as detect
-from beacon import Beacon
+import detect_beacon
+import beacon
 import position_calculation as pos
 from sbg_driver.msg import SbgGpsPos as gps
 from sbg_driver.msg import SbgEkfEuler as ekf_euler
@@ -40,10 +40,13 @@ def callback_cam(msg):
     global gps_data
     global ekf_y_angle
     global list_of_beacons
+    global publisher
+    global pub_test
     try:
         detected_beacons.clear()
         image_data = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough') # Conversion of msg to cv2 image
         img_90 = cv2.rotate(image_data, cv2.ROTATE_90_CLOCKWISE)
+        
         
         #********************
         #
@@ -71,7 +74,7 @@ def callback_cam(msg):
         image_number = 1
         for img in rearranged_pictures:
             try:  
-                detected_beacons.extend(detect.objDetection(img, cfg, weights, classes, image_number))
+                detected_beacons.extend(detect_beacon.objDetection(img, cfg, weights, classes, image_number, gps_data))
             except Exception as e:
                 print("Error in detection module:", e)
             image_number += 1
@@ -83,9 +86,26 @@ def callback_cam(msg):
         #
         #********************
         for beacon in detected_beacons:
-            beacon.setCarGPS(gps_data)                   
-            print(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle())) 
-            list_of_beacons.append(beacon) 
+            #beacon.setCarGPS(gps_data)                
+            #print(pos.calculateLocation(gps_data[0], gps_data[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle())) 
+            carGPS = beacon.getCarGps() 
+            beacon.setBeaconGps(pos.calculateLocation(carGPS[0], carGPS[1], (beacon.getBeaconDistance()*10**-(3)), ekf_y_angle, beacon.getBeaconAngle()))
+            print(beacon.getBeaconData()) 
+            #list_of_beacons.append(beacon) 
+
+            type_id, latitude, longitude, confidence , angle = beacon.getBeaconData()
+            beacon_message =  beacon_msg()
+            beacon_message.beacon_type = str(type_id)
+            beacon_message.latitude = latitude
+            beacon_message.longitude = longitude 
+            beacon_message.confidence = confidence
+
+            publisher.publish(beacon_message)
+        
+
+        pub_test.publish(beacon_msg())
+
+            
   
     except Exception as error: 
         print("Error in detection function of main module:", error)
@@ -120,19 +140,7 @@ def callback_ekf(msg):
         print("Error getting heading of car: ", error)
 
 # Only for testing
-def createDummyBeacons():
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    list_of_beacons.append(Beacon("bake", [0,0], 0, 4567)) 
-    list_of_beacons.append(Beacon("bake2", [1,2], 3, 4567)) 
-    
-    for beacon in list_of_beacons:
-        beacon.setBeaconGps([10.172614992219154, 99.77867763126982])
-        beacon.SetConfidence(0.86)
+ 
  
 #********************
 #
@@ -142,28 +150,30 @@ def createDummyBeacons():
 #
 #********************
 def main():
-  
-    rospy.Subscriber("/camera/image_raw", Image, callback_cam)                           # Subscribe to ladybug cam, object detection and pos calculation in callback
-    rospy.Subscriber("/sbg/gps_pos", gps , callback_gps)                                 # Subscribe to car gps
-    rospy.Subscriber("/sbg/ekf_euler", ekf_euler , callback_ekf)                         # Subscribe to ekf_euler to receive heading of car
+    global publisher
+    global pub_test
+    rospy.Subscriber("/camera/image_raw", Image, callback_cam, queue_size=1)                           # Subscribe to ladybug cam, object detection and pos calculation in callback
+    rospy.Subscriber("/sbg/gps_pos", gps , callback_gps, queue_size=1)                                 # Subscribe to car gps
+    rospy.Subscriber("/sbg/ekf_euler", ekf_euler , callback_ekf, queue_size=1)                         # Subscribe to ekf_euler to receive heading of car
+    rate = rospy.Rate(10)  								    # Publshing frequency of 10Hz. Might need to be changed
+    publisher = rospy.Publisher("trafficBeacon/beacon_pos", beacon_msg, queue_size=10)
+    pub_test = rospy.Publisher("trafficBeacon/beacon_pssssos", beacon_msg, queue_size=10)
     rospy.spin()                                                                        # wait till all msg from topic have been played, remove later so won't be stuck here
-  
-    #createDummyBeacons()                                                                 # Create dummy beacons for debugging and testing
     
-    publisher = rospy.Publisher("trafficBeacon/beacon_pos", beacon_msg, queue_size=10)   # create publisher publishing to trafficBeacon/beacon_pos topic
+       # create publisher publishing to trafficBeacon/beacon_pos topic
     while not rospy.is_shutdown():
         transmitted_beacons = [] 
 
         for current_beacon in list_of_beacons:                                               # Iterate through list of beacons, and publish
             try:
                 
-                rate = rospy.Rate(10)                                                        # Publshing frequency of 10Hz. Might need to be changed
+                                                                      
 
                 type_id, latitude, longitude, confidence = current_beacon.getBeaconData()
 
                 if not rospy.is_shutdown():                                                  # Check if ros is running. If so, publish
                     beacon_message =  beacon_msg()
-                    beacon_message.beacon_type = type_id
+                    beacon_message.beacon_type = str(type_id)
                     beacon_message.latitude = latitude
                     beacon_message.longitude = longitude
                     beacon_message.confidence = confidence
@@ -179,14 +189,15 @@ def main():
 
 if __name__ == '__main__':
 
-    classes     = ['bake', 'bake2', 'intelliBake']
+    classes     = ['bake', 'bake2', 'intellibeacon']
     gps_data    = []
     ekf_y_angle = None
 
 
+    #cfg = os.path.join('/home/tesla/catkin_ws/src/eddy_beacon_locator/scripts/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
+    #weights = os.path.join('/home/tesla/catkin_ws/src/eddy_beacon_locator/scripts/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
     cfg = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov4-tiny-custom.cfg')
     weights = os.path.join('/home/jerome/Downloads/catkin_ws/src/darknet_ros/darknet_ros/yolo_network_config/weights/yolov4-tiny-custom_best.weights')
-
     
 
     main()

@@ -1,4 +1,3 @@
-from beacon import Beacon
 import math
 
 def calculate_distance(y, h, height):
