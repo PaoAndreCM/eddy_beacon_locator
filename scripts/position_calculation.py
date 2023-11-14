@@ -1,15 +1,6 @@
 from math import asin, atan2, cos, degrees, radians, sin, degrees
 import distance_calculation as distance
-
-COMPASS_PHASE_SHIFT= 0
-
-def car_orientation_angle_calculation(angle_radians):
-    angle_degrees = degrees(angle_radians) % 360
-    if angle_degrees < 0:
-        angle_degrees += 360
-    elif angle_degrees == 360:
-        angle_degrees = 0
-    return angle_degrees + COMPASS_PHASE_SHIFT
+from angle_calculation import car_orientation_angle_calculation
 
 def calculateLocation(carLatitude, carLongitude, d, beacon_angle, z_rot, R=6371):
     """
