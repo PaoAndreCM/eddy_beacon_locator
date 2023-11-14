@@ -1,10 +1,10 @@
 import json
 
 class Beacon:
-    def __init__(self, type, boundingBoxPos, angle, distance, confidence):
+    def __init__(self, type, boundingBoxPos, angle, distance, confidence, car_gps):
         self.type             = type
         self.boundindBoxPos   = boundingBoxPos
-        self.car_gps          = []
+        self.car_gps          = car_gps
         self.beacon_gps       = []
         self.beacon_angle     = angle
         self.beacon_distance  = distance
@@ -30,11 +30,11 @@ class Beacon:
         return self.beacon_distance
         
     def SetBeaconAngle(self, angle):
-        self._beacon_angle = angle
+        self._beacon_angle = angle 
     
     def SetConfidence(self, confidence):
         self.confidence = confidence
 
     def getBeaconData(self):
-        return [self.type, self.beacon_gps[0], self.beacon_gps[1], self.confidence]
+        return [self.type, self.beacon_gps[0], self.beacon_gps[1], self.confidence, self.beacon_angle]
         

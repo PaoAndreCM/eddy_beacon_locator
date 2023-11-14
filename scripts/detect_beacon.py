@@ -1,10 +1,11 @@
-from angle_calculation import calculate_angle
-from distance_calculation import calculate_distance
-from beacon import Beacon
+#!/usr/bin/env python3
+import angle_calculation
+import distance_calculation
+import beacon
 import cv2
 import numpy as np
 
-def objDetection(frame, cfg, weights, classes, image_part_number):
+def objDetection(frame, cfg, weights, classes, image_part_number, car_gps):
 
     listOfBeacons = []
     # Load Model
@@ -37,7 +38,8 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > 0.5:
-                # Object detected
+                # Object detected 
+
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
@@ -48,15 +50,22 @@ def objDetection(frame, cfg, weights, classes, image_part_number):
                 y = int(center_y - h / 2)
                 
                 #print("[x, y, w, h]:", x, y, w, h)
-
+ 
                 boxes.append([x, y, w, h])
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
+
+                # Adding bounding box to picture slice
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 4)
+                
+                #Writing picture of detected beacon to harddisk. File name placeholder is confidence value
+                cv2.imwrite("./" + str(confidence) +".jpg", frame)
+                
                 # Calculate the angle of the beacon
-                angle = calculate_angle(image_part_number, center_x, width)
+                angle = angle_calculation.calculate_angle(image_part_number, center_x, width)
                 #Calculate the distance from car to beacon
-                distance = calculate_distance(y, h, height)
-                listOfBeacons.append(Beacon(class_id, [x,y], angle, distance, confidence)) # insert beacon type/class later
+                distance = distance_calculation.calculate_distance(y, h, height)
+                listOfBeacons.append(beacon.Beacon(class_id, [x,y], angle, distance, confidence, car_gps)) # insert beacon type/class later
                 
     #Detected plates put inside the image
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)

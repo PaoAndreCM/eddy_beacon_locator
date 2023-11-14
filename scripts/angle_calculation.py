@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #############################################################################
 # Author: Igor Kojanin
 # Calculate the angle of a beacon in degrees based on the middle_x of the beacon's bounding box and the width of the picture.

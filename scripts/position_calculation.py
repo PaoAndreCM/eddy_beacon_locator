@@ -1,8 +1,7 @@
 from math import asin, atan2, cos, degrees, radians, sin, degrees
-from beacon import Beacon
 import distance_calculation as distance
 
-COMPASS_PHASE_SHIFT= 135
+COMPASS_PHASE_SHIFT= 0
 
 def car_orientation_angle_calculation(angle_radians):
     angle_degrees = degrees(angle_radians) % 360
