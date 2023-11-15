@@ -8,6 +8,18 @@
 # August 2023
 #############################################################################
 
+COMPASS_PHASE_SHIFT = 0
+
+# Calculates the orientation of the car in degrees where 0 is north, 90 is east and so on
+# The input is the Z-axis angle of the car (in radians - 0 is north pi/2 is east and -pi/2 is west).
+def car_orientation_angle_calculation(angle_radians):
+    angle_degrees = math.degrees(angle_radians) % 360   # %360 to ensure that the resulting degrees fall within the range of 0 to 360 degrees
+    if angle_degrees < 0:
+        angle_degrees += 360
+    if angle_degrees == 360:
+        angle_degrees = 0
+    return (angle_degrees + COMPASS_PHASE_SHIFT) % 360  # % 360 to ensure that when COMPASS_PHASE_SHIFT > 0 result falls withing the range of 0 to 360 degrees
+    
 def calculate_angle(picture_num, middle_x, width):
     #print(middle_x)
     #print(picture_num)
